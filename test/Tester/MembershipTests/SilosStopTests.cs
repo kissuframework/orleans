@@ -16,9 +16,9 @@ namespace UnitTests.MembershipTests
 {
     public class SilosStopTests : TestClusterPerTest
     {
-        private class BuilderConfigurator : ISiloBuilderConfigurator, IClientBuilderConfigurator
+        private class BuilderConfigurator : ISiloConfigurator, IClientBuilderConfigurator
         {
-            public void Configure(ISiloHostBuilder hostBuilder)
+            public void Configure(ISiloBuilder hostBuilder)
             {
                 hostBuilder
                     .Configure<ClusterMembershipOptions>(options =>
@@ -39,7 +39,6 @@ namespace UnitTests.MembershipTests
 
         protected override void ConfigureTestCluster(TestClusterBuilder builder)
         {
-            builder.CreateSiloAsync = AppDomainSiloHandle.Create;
             builder.AddClientBuilderConfigurator<BuilderConfigurator>();
             builder.AddSiloBuilderConfigurator<BuilderConfigurator>();
         }

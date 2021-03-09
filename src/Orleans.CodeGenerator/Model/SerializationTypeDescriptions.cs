@@ -1,4 +1,3 @@
-﻿using System;
 using System.Collections.Generic;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -36,12 +35,12 @@ namespace Orleans.CodeGenerator.Model
                 if (ReferenceEquals(x, null)) return false;
                 if (ReferenceEquals(y, null)) return false;
                 if (x.GetType() != y.GetType()) return false;
-                return Equals(x.Target, y.Target);
+                return SymbolEqualityComparer.Default.Equals(x.Target, y.Target);
             }
 
             public int GetHashCode(SerializerTypeDescription obj)
             {
-                return obj.Target != null ? obj.Target.GetHashCode() : 0;
+                return obj.Target != null ? SymbolEqualityComparer.Default.GetHashCode(obj.Target) : 0;
             }
         }
     }
@@ -67,14 +66,14 @@ namespace Orleans.CodeGenerator.Model
                 if (ReferenceEquals(x, null)) return false;
                 if (ReferenceEquals(y, null)) return false;
                 if (x.GetType() != y.GetType()) return false;
-                return Equals(x.Type, y.Type);
+                return SymbolEqualityComparer.Default.Equals(x.Type, y.Type);
             }
 
             public int GetHashCode(KnownTypeDescription obj)
             {
                 unchecked
                 {
-                    return ((obj.Type != null ? obj.Type.GetHashCode() : 0) * 397);
+                    return ((obj.Type != null ? SymbolEqualityComparer.Default.GetHashCode(obj.Type) : 0) * 397);
                 }
             }
         }

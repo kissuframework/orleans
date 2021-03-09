@@ -6,6 +6,11 @@
   <Import Project="$(_ParentDirectoryBuildPropsPath)" Condition="Exists('$(_ParentDirectoryBuildPropsPath)')"/>
 
   <PropertyGroup>
+    <StandardTargetFrameworks>netcoreapp3.1;net5.0</StandardTargetFrameworks>
+    <MultiTargetFrameworks>netcoreapp3.1;net5.0</MultiTargetFrameworks>
+  </PropertyGroup>
+
+  <PropertyGroup>
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 

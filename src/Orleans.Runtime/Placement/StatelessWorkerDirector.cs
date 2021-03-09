@@ -7,21 +7,7 @@ namespace Orleans.Runtime.Placement
 {
     internal class StatelessWorkerDirector : IPlacementDirector, IActivationSelector
     {
-        private static readonly SafeRandom random = new SafeRandom();
-
-        public Task<PlacementResult> OnSelectActivation(
-            PlacementStrategy strategy, GrainId target, IPlacementRuntime context)
-        {
-            return Task.FromResult(SelectActivationCore(strategy, target, context));
-        }
-
-        public bool TrySelectActivationSynchronously(
-            PlacementStrategy strategy, GrainId target, IPlacementRuntime context, out PlacementResult placementResult)
-        {
-            placementResult = SelectActivationCore(strategy, target, context);
-            return placementResult != null;
-        }
-
+        public ValueTask<PlacementResult> OnSelectActivation(PlacementStrategy strategy, GrainId target, IPlacementRuntime context) => new ValueTask<PlacementResult>(SelectActivationCore(strategy, target, context));
 
         public Task<SiloAddress> OnAddActivation(PlacementStrategy strategy, PlacementTarget target, IPlacementContext context)
         {
@@ -40,12 +26,12 @@ namespace Orleans.Runtime.Placement
             }
 
             // otherwise, place somewhere else
-            return Task.FromResult(compatibleSilos[random.Next(compatibleSilos.Count)]);
+            return Task.FromResult(compatibleSilos[ThreadSafeRandom.Next(compatibleSilos.Length)]);
         }
 
         private PlacementResult SelectActivationCore(PlacementStrategy strategy, GrainId target, IPlacementRuntime context)
         {
-            if (target.IsClient)
+            if (target.IsClient())
                 throw new InvalidOperationException("Cannot use StatelessWorkerStrategy to route messages to client grains.");
 
             // If there are available (not busy with a request) activations, it returns the first one.
@@ -72,7 +58,7 @@ namespace Orleans.Runtime.Placement
 
             if (local.Count >= placement.MaxLocal)
             {
-                var id = local[local.Count == 1 ? 0 : random.Next(local.Count)].ActivationId;
+                var id = local[local.Count == 1 ? 0 : ThreadSafeRandom.Next(local.Count)].ActivationId;
                 return PlacementResult.IdentifySelection(ActivationAddress.GetAddress(context.LocalSilo, target, id));
             }
 
@@ -81,7 +67,7 @@ namespace Orleans.Runtime.Placement
 
         internal static ActivationData PickRandom(List<ActivationData> local)
         {
-            return local[local.Count == 1 ? 0 : random.Next(local.Count)];
+            return local[local.Count == 1 ? 0 : ThreadSafeRandom.Next(local.Count)];
         }
     }
 }

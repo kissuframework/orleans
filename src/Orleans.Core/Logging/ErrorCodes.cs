@@ -338,7 +338,7 @@ namespace Orleans
         Runtime_Error_100329 = Runtime + 329,
         Runtime_Error_100330 = Runtime + 330,
         Runtime_Error_100331 = Runtime + 331,
-        
+
         SiloBase                        = Runtime + 400,
         SiloStarting                    = SiloBase + 1,
         SiloStarted                     = SiloBase + 2,
@@ -555,7 +555,7 @@ namespace Orleans
         PerfCounterCategoryCheckError   = PerfCounterBase + 18,
         PerfCounterConnectError         = PerfCounterBase + 19,
         PerfCounterFailedToInitialize   = PerfCounterBase + 20,
-        
+
         ProxyClientBase                             = Runtime + 900,
         ProxyClient_ReceiveError                    = Runtime_Error_100021, // Backward compatability
         ProxyClient_SerializationError              = Runtime_Error_100159, // Backward compatability
@@ -633,7 +633,11 @@ namespace Orleans
         Messaging_Dispatcher_ReturnToOriginCluster    = MessagingBase + 35,
         MessagingAcceptAsyncSocketException     = MessagingBase + 36,
         Messaging_ExceptionReceiveAsync         = MessagingBase + 37,
-        Messaging_DroppingExpiredMessage = MessagingBase + 38,
+        Messaging_DroppingExpiredMessage        = MessagingBase + 38,
+        Messaging_DroppingBlockedMessage        = MessagingBase + 39,
+        Messaging_Inbound_Enqueue               = MessagingBase + 40,
+        Messaging_Inbound_Dequeue               = MessagingBase + 41,
+        Messaging_Dispatcher_Rejected           = MessagingBase + 42,
 
         DirectoryBase                           = Runtime + 1100,
         DirectoryBothPrimaryAndBackupForGrain   = DirectoryBase + 1,
@@ -760,7 +764,6 @@ namespace Orleans
         IGC_SendRequest_NullContext             = DispatcherBase + 26,
         IGC_SniffIncomingMessage_Exc            = DispatcherBase + 27,
         Dispatcher_DetectedDeadlock             = DispatcherBase + 28,
-        Dispatcher_DroppingExpiredMessage       = DispatcherBase + 29,
         Dispatcher_ActivationOverloaded         = DispatcherBase + 30,
         IGC_SendResponseFailed                  = DispatcherBase + 31,
         IGC_SendExceptionResponseFailed         = DispatcherBase + 32,
@@ -894,8 +897,9 @@ namespace Orleans
         RS_Started                              = ReminderServiceBase + 36,
         RS_ServiceInitialLoadFailing            = ReminderServiceBase + 37,
         RS_ServiceInitialLoadFailed             = ReminderServiceBase + 38,
+        RS_FastReminderInterval                 = ReminderServiceBase + 39,
 
-        
+
         // Codes for the Consistent Ring Provider
         ConsistentRingProviderBase                  = Runtime + 3000,
         CRP_Local_Subscriber_Exception              = ConsistentRingProviderBase + 1,
@@ -996,7 +1000,7 @@ namespace Orleans
         PersistentStreamPullingManager_AlreadyStarted   = PersistentStreamPullingManagerBase + 21,
         PersistentStreamPullingManager_AlreadyStopped   = PersistentStreamPullingManagerBase + 22,
         PersistentStreamPullingManager_PeriodicPrint    = PersistentStreamPullingManagerBase + 23,
-        
+
         AzureServiceRuntimeWrapper          = Runtime + 3700,
         AzureServiceRuntime_NotLoaded       = AzureServiceRuntimeWrapper +1,
         AzureServiceRuntime_FailedToLoad    = AzureServiceRuntimeWrapper + 2,
@@ -1037,7 +1041,7 @@ namespace Orleans
         LogConsistency_CaughtException = LogConsistencyBase + 2,
         LogConsistency_ProtocolError = LogConsistencyBase + 3,
         LogConsistency_ProtocolFatalError = LogConsistencyBase + 4,
-        
+
         // Note: individual Service Fabric error codes are defined in
         // Microsoft.Orleans.ServiceFabric.Utilities.ErrorCode.
         ServiceFabricBase = Runtime + 4400,
@@ -1046,6 +1050,9 @@ namespace Orleans
         Transactions_SendingTMRequest = TransactionsBase + 1,
         Transactions_ReceivedTMResponse = TransactionsBase + 2,
         Transactions_TMError = TransactionsBase + 3,
+
+        OSBase = Runtime + 4600,
+        OS_InvalidOS = OSBase + 1
     }
 }
 // ReSharper restore InconsistentNaming

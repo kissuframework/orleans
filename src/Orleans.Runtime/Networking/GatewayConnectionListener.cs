@@ -3,22 +3,22 @@ using System.Net;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Connections;
+using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Orleans.Configuration;
 using Orleans.Hosting;
 
 namespace Orleans.Runtime.Messaging
 {
-    internal sealed class GatewayConnectionListener : ConnectionListener, ILifecycleParticipant<ISiloLifecycle>
+    internal sealed class GatewayConnectionListener : ConnectionListener, ILifecycleParticipant<ISiloLifecycle>, ILifecycleObserver
     {
         internal static readonly object ServicesKey = new object();
-        private readonly INetworkingTrace trace;
         private readonly ILocalSiloDetails localSiloDetails;
-        private readonly IOptions<MultiClusterOptions> multiClusterOptions;
         private readonly MessageCenter messageCenter;
+        private readonly ConnectionCommon connectionShared;
+        private readonly ILogger<GatewayConnectionListener> logger;
         private readonly EndpointOptions endpointOptions;
         private readonly SiloConnectionOptions siloConnectionOptions;
-        private readonly MessageFactory messageFactory;
         private readonly OverloadDetector overloadDetector;
         private readonly Gateway gateway;
 
@@ -26,25 +26,22 @@ namespace Orleans.Runtime.Messaging
             IServiceProvider serviceProvider,
             IOptions<ConnectionOptions> connectionOptions,
             IOptions<SiloConnectionOptions> siloConnectionOptions,
-            MessageFactory messageFactory,
             OverloadDetector overloadDetector,
-            Gateway gateway,
-            INetworkingTrace trace,
             ILocalSiloDetails localSiloDetails,
-            IOptions<MultiClusterOptions> multiClusterOptions,
             IOptions<EndpointOptions> endpointOptions,
             MessageCenter messageCenter,
-            ConnectionManager connectionManager)
-            : base(serviceProvider, serviceProvider.GetRequiredServiceByKey<object, IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, trace)
+            ConnectionManager connectionManager,
+            ConnectionCommon connectionShared,
+            ILogger<GatewayConnectionListener> logger)
+            : base(serviceProvider.GetRequiredServiceByKey<object, IConnectionListenerFactory>(ServicesKey), connectionOptions, connectionManager, connectionShared)
         {
             this.siloConnectionOptions = siloConnectionOptions.Value;
-            this.messageFactory = messageFactory;
             this.overloadDetector = overloadDetector;
-            this.gateway = gateway;
-            this.trace = trace;
+            this.gateway = messageCenter.Gateway;
             this.localSiloDetails = localSiloDetails;
-            this.multiClusterOptions = multiClusterOptions;
             this.messageCenter = messageCenter;
+            this.connectionShared = connectionShared;
+            this.logger = logger;
             this.endpointOptions = endpointOptions.Value;
         }
 
@@ -55,16 +52,12 @@ namespace Orleans.Runtime.Messaging
             return new GatewayInboundConnection(
                 context,
                 this.ConnectionDelegate,
-                this.ServiceProvider,
                 this.gateway,
                 this.overloadDetector,
-                this.messageFactory,
-                this.trace,
                 this.localSiloDetails,
-                this.multiClusterOptions,
                 this.ConnectionOptions,
                 this.messageCenter,
-                this.localSiloDetails);
+                this.connectionShared);
         }
 
         protected override void ConfigureConnectionBuilder(IConnectionBuilder connectionBuilder)
@@ -78,24 +71,11 @@ namespace Orleans.Runtime.Messaging
         {
             if (this.Endpoint is null) return;
 
-            lifecycle.Subscribe(nameof(GatewayConnectionListener), ServiceLifecycleStage.RuntimeInitialize, this.OnRuntimeInitializeStart, this.OnRuntimeInitializeStop);
-            lifecycle.Subscribe(nameof(GatewayConnectionListener), ServiceLifecycleStage.Active, this.OnActive, _ => Task.CompletedTask);
+            lifecycle.Subscribe(nameof(GatewayConnectionListener), ServiceLifecycleStage.RuntimeInitialize - 1, this);
+            lifecycle.Subscribe(nameof(GatewayConnectionListener), ServiceLifecycleStage.Active, _ => Task.Run(Start));
         }
 
-        private async Task OnRuntimeInitializeStart(CancellationToken cancellationToken)
-        {
-            await Task.Run(() => this.BindAsync(cancellationToken));
-        }
-
-        private async Task OnRuntimeInitializeStop(CancellationToken cancellationToken)
-        {
-            await Task.Run(() => this.StopAsync(cancellationToken));
-        }
-
-        private async Task OnActive(CancellationToken cancellationToken)
-        {
-            // Start accepting connections
-            await Task.Run(() => this.Start());
-        }
+        Task ILifecycleObserver.OnStart(CancellationToken ct) => Task.Run(BindAsync);
+        Task ILifecycleObserver.OnStop(CancellationToken ct) => Task.Run(() => StopAsync(ct));
     }
 }

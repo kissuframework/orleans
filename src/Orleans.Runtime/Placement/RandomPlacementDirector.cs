@@ -1,34 +1,30 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Orleans.GrainDirectory;
 using Orleans.Internal;
 
 namespace Orleans.Runtime.Placement
 {
     internal class RandomPlacementDirector : IPlacementDirector, IActivationSelector
     {
-        private readonly SafeRandom random = new SafeRandom();
-
-        public virtual async Task<PlacementResult> OnSelectActivation(
-            PlacementStrategy strategy, GrainId target, IPlacementRuntime context)
+        public virtual ValueTask<PlacementResult> OnSelectActivation(
+            PlacementStrategy strategy,
+            GrainId target,
+            IPlacementRuntime context)
         {
-            List<ActivationAddress> places = (await context.FullLookup(target)).Addresses;
-            return ChooseRandomActivation(places, context);
-        }
-
-        public bool TrySelectActivationSynchronously(
-            PlacementStrategy strategy, GrainId target, IPlacementRuntime context, out PlacementResult placementResult)
-        {
-            AddressesAndTag addressesAndTag;
-            if (context.FastLookup(target, out addressesAndTag))
+            if (context.FastLookup(target, out var addresses))
             {
-                placementResult = ChooseRandomActivation(addressesAndTag.Addresses, context);
-                return true;
+                var placementResult = ChooseRandomActivation(addresses, context);
+                return new ValueTask<PlacementResult>(placementResult);
             }
 
-            placementResult = null;
-            return false;
+            return SelectActivationAsync(target, context);
+
+            async ValueTask<PlacementResult> SelectActivationAsync(GrainId target, IPlacementRuntime context)
+            {
+                var places = await context.FullLookup(target);
+                return ChooseRandomActivation(places, context);
+            }
         }
 
         protected PlacementResult ChooseRandomActivation(List<ActivationAddress> places, IPlacementRuntime context)
@@ -48,16 +44,16 @@ namespace Orleans.Runtime.Placement
             var here = context.LocalSilo;
             var local = places.Where(a => a.Silo.Equals(here)).ToList();
             if (local.Count > 0)
-                return PlacementResult.IdentifySelection(local[random.Next(local.Count)]);
+                return PlacementResult.IdentifySelection(local[ThreadSafeRandom.Next(local.Count)]);
 
-            return PlacementResult.IdentifySelection(places[random.Next(places.Count)]);
+            return PlacementResult.IdentifySelection(places[ThreadSafeRandom.Next(places.Count)]);
         }
 
         public virtual Task<SiloAddress> OnAddActivation(
             PlacementStrategy strategy, PlacementTarget target, IPlacementContext context)
         {
             var allSilos = context.GetCompatibleSilos(target);
-            return Task.FromResult(allSilos[random.Next(allSilos.Count)]);
+            return Task.FromResult(allSilos[ThreadSafeRandom.Next(allSilos.Length)]);
         }
     }
 }
